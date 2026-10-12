@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Direct index.html serve karne ke liye
+// Web Dashboard serve karne ke liye
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -16,21 +16,21 @@ app.get('/', (req, res) => {
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// WebSocket Connection & Real-time Broadcasting
 wss.on('connection', (ws) => {
-  console.log('Phone/PC Connected via WebSocket');
+  console.log('Client Connected (Phone or Web Dashboard)');
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
 
+      // Mobile ya Dashboard se aaye data ko baaki sabhi clients ko broadcast karo
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(data));
         }
       });
     } catch (e) {
-      console.log('Error parsing message');
+      console.log('Error parsing message:', e);
     }
   });
 
