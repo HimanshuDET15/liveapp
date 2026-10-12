@@ -2,11 +2,16 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Direct index.html serve karne ke liye
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -19,7 +24,6 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
 
-      // Sabhi connected clients ko broadcast karo (Chat, Camera, Gallery)
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(data));
@@ -35,7 +39,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Render ke liye dynamic port use karna zaroori hai
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
