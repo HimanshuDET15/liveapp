@@ -6,9 +6,8 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Badi gallery images ke liye limit badhayi hai
 
-// Web Dashboard serve karne ke liye
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -17,13 +16,13 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
-  console.log('Client Connected (Phone or Web Dashboard)');
+  console.log('Client Connected');
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
 
-      // Mobile ya Dashboard se aaye data ko baaki sabhi clients ko broadcast karo
+      // Broadcast to all other connected clients (Dashboard <-> Phone)
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(data));
