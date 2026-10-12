@@ -6,7 +6,7 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Badi gallery images ke liye limit badhayi hai
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -22,7 +22,6 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
 
-      // Broadcast to all other connected clients (Dashboard <-> Phone)
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify(data));
