@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live PC Dashboard</title>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
+    .container { display: flex; gap: 20px; }
+    section { flex: 1; background: #1e1e1e; padding: 15px; border-radius: 8px; }
+    .box { height: 300px; overflow-y: auto; background: #2d2d2d; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    img { width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 4px; }
+    input { width: 75%; padding: 8px; }
+    button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <h2>Live Monitoring & Chat Dashboard</h2>
+  <div class="container">
+    <section>
+      <h3>Chat</h3>
+      <div class="box" id="chatBox"></div>
+      <input type="text" id="msgInput" placeholder="Type message...">
+      <button onclick="sendMessage()">Send</button>
+    </section>
+    <section>
+      <h3>Live Camera</h3>
+      <div class="box" style="text-align: center;">
+        <img id="camFeed" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+    </section>
+    <section>
+      <h3>Gallery (Last 3 Days)</h3>
+      <div class="box" id="galleryBox"></div>
+    </section>
+  </div>
+
+  <script>
+    // Load old chats from server
+    fetch('/messages').then(res => res.json()).then(data => {
+      data.forEach(m => {
+        document.getElementById('chatBox').innerHTML += `<p><b>${m.sender}:</b> ${m.message}</p>`;
+      });
+    });
+
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'CHAT') {
+        document.getElementById('chatBox').innerHTML += `<p><b>${data.sender}:</b> ${data.text}</p>`;
+      } else if (data.type === 'CAMERA_FRAME') {
+        document.getElementById('camFeed').src = `data:image/jpeg;base64,${data.base64}`;
+      } else if (data.type === 'GALLERY_IMAGE') {
+        document.getElementById('galleryBox').innerHTML += `<img src="data:image/jpeg;base64,${data.base64}" />`;
+      }
+    };
+
+    function sendMessage() {
+      const input = document.getElementById('msgInput');
+      ws.send(JSON.stringify({ type: 'CHAT', sender: 'PC', text: input.value }));
+      document.getElementById('chatBox').innerHTML += `<p><b>PC:</b> ${input.value}</p>`;
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
